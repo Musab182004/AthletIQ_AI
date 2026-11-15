@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AthletIQ – Settings</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar-custom">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/dashboard" class="logo">AthletIQ</a>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/tracker">Tracker</a>
+                <a href="/dietician">Dietician</a>
+                <a href="/analyzer">Form Analyzer</a>
+                <a href="/settings" class="active">Settings</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container settings-wrapper">
+
+        <!-- Header -->
+        <div class="settings-header">
+            <h1>⚙️ Update Profile</h1>
+            <p class="sub-title">Update your details — calories will recalculate automatically</p>
+        </div>
+
+        <!-- Success Message -->
+        {% if success %}
+        <div class="settings-success">
+            ✅ Profile updated! New daily calorie target: <strong>{{ new_calories }} kcal</strong>
+        </div>
+        {% endif %}
+
+        <!-- Settings Form -->
+        <div class="settings-card">
+            <form action="/settings" method="POST">
+
+                <!-- Name & Age -->
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label class="settings-label">Full Name</label>
+                        <input type="text" name="name" value="{{ user.name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="settings-label">Age</label>
+                        <input type="number" name="age" value="{{ user.age }}" min="10" max="100" required>
+                    </div>
+                </div>
+
+                <!-- Weight & Target Weight -->
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label class="settings-label">Current Weight (kg)</label>
+                        <input type="number" name="weight" value="{{ user.weight }}" step="0.1" min="30" max="300" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="settings-label">Target Weight (kg)</label>
+                        <input type="number" name="target_weight" value="{{ user.target_weight }}" step="0.1" min="30" max="300" required>
+                    </div>
+                </div>
+
+                <!-- Height -->
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label class="settings-label">Height (cm)</label>
+                        <input type="number" name="height" value="{{ user.height }}" step="0.1" min="100" max="250" required>
+                    </div>
+                    <div class="form-group">
+                        <!-- Empty for layout balance -->
+                    </div>
+                </div>
+
+                <!-- Activity Level -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="settings-label">Activity Level</label>
+                    <select name="activity_level">
+                        <option value="sedentary"        {% if user.activity_level == 'sedentary' %}selected{% endif %}>🪑 Sedentary — little or no exercise</option>
+                        <option value="lightly_active"   {% if user.activity_level == 'lightly_active' %}selected{% endif %}>🚶 Lightly Active — 1-3 days/week</option>
+                        <option value="moderately_active"{% if user.activity_level == 'moderately_active' %}selected{% endif %}>🏃 Moderately Active — 3-5 days/week</option>
+                        <option value="very_active"      {% if user.activity_level == 'very_active' %}selected{% endif %}>💪 Very Active — 6-7 days/week</option>
+                        <option value="extra_active"     {% if user.activity_level == 'extra_active' %}selected{% endif %}>🔥 Extra Active — very hard exercise daily</option>
+                    </select>
+                </div>
+
+                <!-- Goal -->
+                <div class="form-group" style="margin-bottom: 28px;">
+                    <label class="settings-label">Your Goal</label>
+                    <div class="goal-options">
+                        <label class="goal-option {% if user.goal == 'bulk' %}goal-active{% endif %}">
+                            <input type="radio" name="goal" value="bulk" {% if user.goal == 'bulk' %}checked{% endif %}>
+                            <span class="goal-icon">💪</span>
+                            <span class="goal-name">Bulk</span>
+                            <span class="goal-desc">+400 kcal surplus</span>
+                        </label>
+                        <label class="goal-option {% if user.goal == 'cut' %}goal-active{% endif %}">
+                            <input type="radio" name="goal" value="cut" {% if user.goal == 'cut' %}checked{% endif %}>
+                            <span class="goal-icon">🔥</span>
+                            <span class="goal-name">Cut</span>
+                            <span class="goal-desc">-500 kcal deficit</span>
+                        </label>
+                        <label class="goal-option {% if user.goal == 'maintain' %}goal-active{% endif %}">
+                            <input type="radio" name="goal" value="maintain" {% if user.goal == 'maintain' %}checked{% endif %}>
+                            <span class="goal-icon">⚖️</span>
+                            <span class="goal-name">Maintain</span>
+                            <span class="goal-desc">maintenance calories</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Current Calories Info -->
+                <div class="current-cal-box">
+                    <p class="current-cal-label">Current Daily Target</p>
+                    <p class="current-cal-value">{{ user.calories }} <span>kcal</span></p>
+                    <p class="current-cal-hint">Will recalculate automatically when you save</p>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn-at btn-at-primary settings-btn">
+                    💾 Save Changes
+                </button>
+
+            </form>
+        </div>
+
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-custom">
+        AthletIQ &copy; 2026 &nbsp;·&nbsp; Track. Improve. Dominate.
+    </div>
+
+    <script>
+        // Goal option highlight on click
+        document.querySelectorAll('.goal-option input').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.goal-option').forEach(opt => {
+                    opt.classList.remove('goal-active');
+                });
+                this.parentElement.classList.add('goal-active');
+            });
+        });
+    </script>
+
+</body>
+</html>

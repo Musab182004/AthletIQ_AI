@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AthletIQ – Form Analyzer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Navbar -->
+     <nav class="navbar-custom">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/dashboard" class="logo">AthletIQ</a>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/tracker">Tracker</a>
+                <a href="/dietician">Dietician</a>
+                <a href="/analyzer" class="active">Form Analyzer</a>
+                <a href="/settings">Settings</a>
+                <a href="/logout" style="color: #ef4444;">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="analyzer-wrapper">
+
+        <!-- Header -->
+        <div class="analyzer-header">
+            <h1>🏋️ Form Analyzer</h1>
+            <p class="sub-title">Upload your exercise video and get instant AI-powered form feedback</p>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="analyzer-card">
+            <form action="/analyze" method="POST" enctype="multipart/form-data" id="analyzeForm">
+
+                <!-- Exercise Select -->
+                <div class="form-group mb-4">
+                    <label class="analyzer-label">Select Exercise</label>
+                    <select name="exercise" class="analyzer-select">
+                        <option value="squat">🦵 Squat</option>
+                        <option value="pushup">💪 Push-up</option>
+                        <option value="bicep_curl">🏋️ Bicep Curl</option>
+                    </select>
+                </div>
+
+                <!-- Upload Zone -->
+                <div class="form-group mb-4">
+                    <label class="analyzer-label">Upload Video</label>
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" name="video" id="videoInput" accept="video/mp4,video/mov,video/avi" required>
+                        <div class="upload-zone-content" id="uploadContent">
+                            <span class="upload-icon">📁</span>
+                            <p class="upload-text">Click to upload or drag & drop</p>
+                            <p class="upload-hint">MP4, MOV, AVI • Max 25MB • 10-30 sec recommended</p>
+                        </div>
+                        <div class="upload-zone-content" id="uploadSelected" style="display:none;">
+                            <span class="upload-icon">✅</span>
+                            <p class="upload-text" id="fileName">Video selected</p>
+                            <p class="upload-hint">Click to change</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Preview -->
+                <div class="form-group mb-4" id="previewSection" style="display:none;">
+                    <label class="analyzer-label">Preview & Set Trim Points</label>
+                    <div class="video-preview-box">
+                        <video id="videoPreview" class="preview-player" controls></video>
+                        <div class="preview-time-bar">
+                            <span class="current-time-label">
+                                Current Time: <strong id="currentTimeDisplay">0s</strong>
+                            </span>
+                            <div class="preview-btn-group">
+                                <button type="button" class="preview-set-btn set-start-btn" onclick="setStart()">
+                                    ◀ Set as Start
+                                </button>
+                                <button type="button" class="preview-set-btn set-end-btn" onclick="setEnd()">
+                                    Set as End ▶
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trim Option -->
+                <div class="form-group mb-4">
+                    <label class="analyzer-label">
+                        Trim Video
+                        <span class="optional-tag">Optional</span>
+                    </label>
+                    <div class="trim-row">
+                        <div class="trim-input-group">
+                            <label class="trim-label">Start (seconds)</label>
+                            <input type="number" name="trim_start" id="trimStart"
+                                   class="trim-input" placeholder="0" min="0" value="0">
+                        </div>
+                        <div class="trim-divider">→</div>
+                        <div class="trim-input-group">
+                            <label class="trim-label">End (seconds)</label>
+                            <input type="number" name="trim_end" id="trimEnd"
+                                   class="trim-input" placeholder="30" min="1" value="30">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn-at btn-at-primary analyze-btn" id="analyzeBtn">
+                    🔍 Analyze Form
+                </button>
+
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        {% if results %}
+        <div class="results-card">
+
+            <!-- Accuracy Score -->
+            <div class="score-section">
+                <div class="score-circle
+                    {% if results.accuracy >= 80 %}score-green
+                    {% elif results.accuracy >= 50 %}score-yellow
+                    {% else %}score-red{% endif %}">
+                    <span class="score-number">{{ results.accuracy }}%</span>
+                    <span class="score-label">Form Accuracy</span>
+                </div>
+                <div class="score-info">
+                    <h3 class="score-title">
+                        {% if results.accuracy >= 80 %}✅ Great Form!
+                        {% elif results.accuracy >= 50 %}⚠️ Needs Improvement
+                        {% else %}❌ Poor Form
+                        {% endif %}
+                    </h3>
+                    <p class="score-exercise">{{ results.exercise | capitalize }} Analysis</p>
+                    <p class="score-frames">Analyzed {{ results.frames }} frames</p>
+                </div>
+            </div>
+
+            <!-- Good Points -->
+            {% if results.good %}
+            <div class="feedback-section">
+                <h4 class="feedback-title good-title">✅ What you did well</h4>
+                {% for point in results.good %}
+                <div class="feedback-item feedback-good">{{ point }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Bad Points -->
+            {% if results.bad %}
+            <div class="feedback-section">
+                <h4 class="feedback-title bad-title">❌ What needs fixing</h4>
+                {% for point in results.bad %}
+                <div class="feedback-item feedback-bad">{{ point }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Overall Feedback -->
+            <div class="overall-feedback">
+                <h4 class="feedback-title">💬 Overall Feedback</h4>
+                <p class="overall-text">{{ results.overall }}</p>
+            </div>
+
+            <!-- Analyze Again -->
+            <a href="/analyzer" class="btn-at btn-at-secondary analyze-again-btn">
+                🔄 Analyze Another Video
+            </a>
+
+        </div>
+        {% endif %}
+
+        <!-- Back -->
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-custom">
+        AthletIQ &copy; 2026 &nbsp;·&nbsp; Track. Improve. Dominate.
+    </div>
+
+    <script>
+        const videoInput = document.getElementById('videoInput');
+        const uploadContent = document.getElementById('uploadContent');
+        const uploadSelected = document.getElementById('uploadSelected');
+        const fileName = document.getElementById('fileName');
+        const uploadZone = document.getElementById('uploadZone');
+        const previewSection = document.getElementById('previewSection');
+        const videoPreview = document.getElementById('videoPreview');
+
+        // File selected
+        videoInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                fileName.textContent = this.files[0].name;
+                uploadContent.style.display = 'none';
+                uploadSelected.style.display = 'flex';
+
+                // Show preview
+                const url = URL.createObjectURL(this.files[0]);
+                videoPreview.src = url;
+                previewSection.style.display = 'block';
+
+                // Update current time
+                videoPreview.addEventListener('timeupdate', function() {
+                    document.getElementById('currentTimeDisplay').textContent =
+                        Math.floor(this.currentTime) + 's';
+                });
+
+                // Auto set end time from video duration
+                videoPreview.addEventListener('loadedmetadata', function() {
+                    document.getElementById('trimEnd').value = Math.floor(this.duration);
+                });
+            }
+        });
+
+        // Set start
+        function setStart() {
+            const t = Math.floor(videoPreview.currentTime);
+            document.getElementById('trimStart').value = t;
+        }
+
+        // Set end
+        function setEnd() {
+            const t = Math.floor(videoPreview.currentTime);
+            document.getElementById('trimEnd').value = t;
+        }
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        uploadZone.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                videoInput.files = files;
+                fileName.textContent = files[0].name;
+                uploadContent.style.display = 'none';
+                uploadSelected.style.display = 'flex';
+
+                const url = URL.createObjectURL(files[0]);
+                videoPreview.src = url;
+                previewSection.style.display = 'block';
+            }
+        });
+
+        // Loading state
+        document.getElementById('analyzeForm').addEventListener('submit', function() {
+            const btn = document.getElementById('analyzeBtn');
+            btn.textContent = '⏳ Analyzing... Please wait';
+            btn.disabled = true;
+        });
+    </script>
+
+</body>
+</html>

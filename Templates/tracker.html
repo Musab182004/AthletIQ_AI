@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AthletIQ – Monthly Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <!-- ───── Navbar ───── -->
+     <nav class="navbar-custom">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/dashboard" class="logo">AthletIQ</a>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/tracker " class="active">Tracker</a>
+                <a href="/dietician">Dietician</a>
+                <a href="/analyzer">Form Analyzer</a>
+                <a href="/settings">Settings</a>
+                <a href="/logout" style="color: #ef4444;">Logout</a>
+            </div>
+        </div>
+    </nav>
+    <!-- ───── Main Wrapper ───── -->
+    <div class="tracker-wrapper">
+
+        <!-- Page Header -->
+        <div class="tracker-header">
+            <h1>📅 Monthly Tracker</h1>
+        </div>
+
+        <!-- Month Navigation -->
+        <div class="month-nav">
+            <a href="/tracker/{{ prev_year }}/{{ prev_month }}" class="month-nav-btn">← Prev</a>
+            <span class="month-nav-title">{{ month }}</span>
+            {% if not is_future %}
+            <a href="/tracker/{{ next_year }}/{{ next_month }}" class="month-nav-btn">Next →</a>
+            {% else %}
+            <span class="month-nav-btn disabled">Next →</span>
+            {% endif %}
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-box border-primary">
+                <div class="stat-value">
+                    {% if net_change > 0 %}+{{ net_change }}{% else %}{{ net_change }}{% endif %} kg
+                </div>
+                <div class="stat-label">Net Weight Change</div>
+            </div>
+            <div class="stat-box border-success">
+                <div class="stat-value">
+                    {{ logs.values() | selectattr('gym') | list | length }}
+                </div>
+                <div class="stat-label">Gym Sessions</div>
+            </div>
+            <div class="stat-box border-warning">
+                <div class="stat-value">{{ logs | length }}</div>
+                <div class="stat-label">Days Logged</div>
+            </div>
+        </div>
+
+        <!-- Calorie Intelligence Card -->
+        <div class="cal-intel-card">
+            <div class="cal-intel-left">
+                <p class="cal-intel-label">YOUR DAILY CALORIE TARGET</p>
+                <p class="cal-intel-goal-tag">Goal: <span class="goal-mode">{{ user_goal }}</span></p>
+                <div class="cal-intel-number">{{ user_calories }} <span>kcal</span></div>
+                <p class="cal-intel-hint">Log today's calories in the form below to get feedback.</p>
+            </div>
+
+            <div class="cal-intel-right">
+                <p class="cal-intel-label">TODAY'S CALORIE FEEDBACK</p>
+
+                {% set today = now.strftime('%Y-%m-%d') %}
+                {% if today in logs %}
+                    {% set eaten = logs[today].cals | int %}
+                    {% set diff = eaten - user_calories %}
+
+                    <div class="cal-bar-wrap">
+                        <div class="cal-bar-track">
+                            <div class="cal-bar-fill
+                                {% if diff > 400 %}bar-red
+                                {% elif diff > 200 %}bar-orange
+                                {% elif diff > 100 %}bar-yellow
+                                {% elif diff >= -100 %}bar-green
+                                {% else %}bar-blue{% endif %}"
+                                style="--bar-width: {{ bar_width.get(today, 10) }}%">
+                            </div>
+                        </div>
+                        <p class="cal-bar-numbers">
+                            <span>{{ eaten }} eaten</span>
+                            <span>{{ user_calories }} target</span>
+                        </p>
+                    </div>
+
+                    {% if user_goal == 'cut' %}
+                        {% if diff > 400 %}
+                        <div class="cal-feedback feedback-red">❌ You can't hit your cut goal today — way over budget.</div>
+                        {% elif diff > 200 %}
+                        <div class="cal-feedback feedback-orange">🟠 Good effort, but you're pushing the limit of your cut.</div>
+                        {% elif diff > 100 %}
+                        <div class="cal-feedback feedback-yellow">⭐ Excellent! Very close to your cut target.</div>
+                        {% elif diff >= -100 %}
+                        <div class="cal-feedback feedback-green">✅ Perfect cut! You nailed your calorie goal today.</div>
+                        {% else %}
+                        <div class="cal-feedback feedback-blue">⚠️ Too aggressive — you may lose muscle cutting this hard.</div>
+                        {% endif %}
+
+                    {% elif user_goal == 'bulk' %}
+                        {% if diff < -400 %}
+                        <div class="cal-feedback feedback-red">❌ Way under — you won't be able to bulk on this intake.</div>
+                        {% elif diff < -200 %}
+                        <div class="cal-feedback feedback-orange">🟠 You're trying your best, but not enough surplus to bulk.</div>
+                        {% elif diff < -100 %}
+                        <div class="cal-feedback feedback-yellow">⭐ Excellent surplus! Good lean bulk range.</div>
+                        {% elif diff <= 300 %}
+                        <div class="cal-feedback feedback-green">✅ Perfect bulk calories! Right in the sweet spot.</div>
+                        {% else %}
+                        <div class="cal-feedback feedback-red">❌ Too much surplus — you'll gain fat, not muscle.</div>
+                        {% endif %}
+
+                    {% else %}
+                        {% if diff > 200 %}
+                        <div class="cal-feedback feedback-orange">🟠 Over maintenance — you may gain weight.</div>
+                        {% elif diff >= -200 %}
+                        <div class="cal-feedback feedback-green">✅ Perfect maintenance range. Keep it up!</div>
+                        {% else %}
+                        <div class="cal-feedback feedback-blue">⚠️ Under maintenance — you're in an unintended deficit.</div>
+                        {% endif %}
+                    {% endif %}
+
+                    <p class="cal-diff-text">
+                        {% if diff > 0 %}+{{ diff }} kcal over target
+                        {% elif diff < 0 %}{{ diff }} kcal under target
+                        {% else %}Exactly on target!{% endif %}
+                    </p>
+
+                {% else %}
+                <div class="cal-no-log">
+                    <span>📋</span>
+                    Log today's calories below to see your feedback.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ───── Charts Section ───── -->
+        {% if logs %}
+        <div class="charts-row">
+
+            <!-- Weight Over Time -->
+            <div class="chart-card">
+                <h3 class="chart-title">⚖️ Weight Over Time</h3>
+                <div class="chart-canvas-wrap">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Calories vs Target -->
+            <div class="chart-card">
+                <h3 class="chart-title">🔥 Calories vs Target</h3>
+                <div class="chart-canvas-wrap">
+                    <canvas id="calChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Gym Attendance -->
+        <div class="chart-card chart-card-full">
+            <h3 class="chart-title">🏋️ Gym Attendance This Month</h3>
+            <div class="chart-canvas-wrap chart-canvas-short">
+                <canvas id="gymChart"></canvas>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Log Entry Form -->
+        <div class="log-form-card">
+            <h3>✏️ Log a Day</h3>
+            <form action="/save-tracker" method="POST">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Date</label>
+                    <input type="date" name="date" required value="{{ now.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Weight (kg)</label>
+                        <input type="number" name="weight" step="0.1" placeholder="e.g. 74.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Calories Consumed</label>
+                        <input type="number" name="calories" placeholder="e.g. 2200" required>
+                    </div>
+                </div>
+                <div class="gym-check-row">
+                    <input type="checkbox" name="gym" id="gym-check">
+                    <label for="gym-check">✅ I went to the gym today</label>
+                </div>
+                <button type="submit" class="btn-at btn-at-primary">💾 Save Entry</button>
+            </form>
+        </div>
+
+        <!-- Monthly Log Table -->
+        <div class="table-card">
+            <h3>📊 {{ month }} Log</h3>
+
+            {% if logs %}
+            <div class="table-scroll">
+                <table class="tracker-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Weight (kg)</th>
+                            <th>Calories</th>
+                            <th>Gym</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in range(1, 32) %}
+                        {% set date_str = view_date.strftime('%Y-%m-') + '%02d'|format(day) %}
+                        {% if date_str in logs %}
+                        <tr>
+                            <td class="date-col">{{ date_str }}</td>
+                            <td class="weight-val">{{ logs[date_str].weight }} kg</td>
+                            <td class="cal-val">{{ logs[date_str].cals }} kcal</td>
+                            <td>
+                                {% if logs[date_str].gym %}
+                                <span class="badge-gym-yes">✓ Gym</span>
+                                {% else %}
+                                <span class="badge-gym-no">Rest</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span>📭</span>
+                No entries for {{ month }}.<br>Use the form above to log your first day!
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Back Button -->
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-custom">
+        AthletIQ &copy; 2026 &nbsp;·&nbsp; Track. Improve. Dominate.
+    </div>
+
+    <!-- ───── Chart.js Scripts ───── -->
+    {% if logs %}
+    <script>
+        // ── Data from Flask ──
+        const logsRaw = {{ logs | tojson | safe }};
+        const userCalTarget = {{ user_calories | int }};
+
+        // Sort dates
+        const sortedDates = Object.keys(logsRaw).sort();
+        const weightData  = sortedDates.map(d => logsRaw[d].weight);
+        const calData     = sortedDates.map(d => logsRaw[d].cals);
+        const gymData     = sortedDates.map(d => logsRaw[d].gym ? 1 : 0);
+        const shortDates  = sortedDates.map(d => d.slice(8)); // just day number
+
+        const gridColor   = 'rgba(255,255,255,0.05)';
+        const tickColor   = '#64748b';
+
+        // ── 1. Weight Chart ──
+        new Chart(document.getElementById('weightChart'), {
+            type: 'line',
+            data: {
+                labels: shortDates,
+                datasets: [{
+                    label: 'Weight (kg)',
+                    data: weightData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#3b82f6',
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.parsed.y} kg`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { grid: { color: gridColor }, ticks: { color: tickColor, callback: v => v + ' kg' } }
+                }
+            }
+        });
+
+        // ── 2. Calories Chart ──
+        new Chart(document.getElementById('calChart'), {
+            type: 'bar',
+            data: {
+                labels: shortDates,
+                datasets: [
+                    {
+                        label: 'Calories Eaten',
+                        data: calData,
+                        backgroundColor: calData.map(c =>
+                            c > userCalTarget + 400 ? 'rgba(239,68,68,0.7)' :
+                            c > userCalTarget + 200 ? 'rgba(245,158,11,0.7)' :
+                            c > userCalTarget + 100 ? 'rgba(250,204,21,0.7)' :
+                            c >= userCalTarget - 100 ? 'rgba(16,185,129,0.7)' :
+                            'rgba(59,130,246,0.7)'
+                        ),
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Target',
+                        data: sortedDates.map(() => userCalTarget),
+                        type: 'line',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        borderWidth: 2,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        fill: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#94a3b8', boxWidth: 12 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.parsed.y} kcal`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { grid: { color: gridColor }, ticks: { color: tickColor, callback: v => v + ' kcal' } }
+                }
+            }
+        });
+
+        // ── 3. Gym Attendance Chart ──
+        new Chart(document.getElementById('gymChart'), {
+            type: 'bar',
+            data: {
+                labels: shortDates,
+                datasets: [{
+                    label: 'Gym',
+                    data: gymData,
+                    backgroundColor: gymData.map(g =>
+                        g ? 'rgba(16,185,129,0.8)' : 'rgba(71,85,105,0.4)'
+                    ),
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.parsed.y ? ' Gym ✓' : ' Rest'
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: tickColor,
+                            stepSize: 1,
+                            callback: v => v === 1 ? 'Gym' : v === 0 ? 'Rest' : ''
+                        },
+                        min: 0, max: 1
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+
+</body>
+</html>

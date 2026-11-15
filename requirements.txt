@@ -1,0 +1,7 @@
+Flask
+Flask-Session
+Werkzeug
+groq
+mediapipe
+opencv-python
+numpy

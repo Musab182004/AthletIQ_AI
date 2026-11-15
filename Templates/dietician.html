@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AthletIQ – AI Dietician</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dietician-body">
+
+    <!-- ───── Chat Header ───── -->
+    <div class="chat-header">
+        <a href="/dashboard" class="chat-back-btn">←</a>
+        <div class="chat-header-avatar">🥗</div>
+        <div class="chat-header-info">
+            <p class="chat-header-name">AI Dietician</p>
+            <p class="chat-header-status">● Online • Powered by AthletIQ</p>
+        </div>
+        <a href="/dietician/clear" class="chat-clear-btn" title="Clear chat">🗑</a>
+    </div>
+
+    <!-- ───── Chat Messages ───── -->
+    <div class="chat-messages" id="chatMessages">
+
+        <!-- Welcome message always shown -->
+        <div class="chat-bubble-row bot-row">
+            <div class="chat-avatar">🥗</div>
+            <div class="chat-bubble bot-bubble">
+                Hey <strong>{{ user.name }}</strong>! 👋 I'm your personal AI Dietician.<br><br>
+                I already know your profile — you're on a 
+                <strong>{{ user.goal }}</strong> goal with a daily target of 
+                <strong>{{ user.calories }} kcal</strong>.<br><br>
+                Ask me anything about your diet, meal plans, or nutrition. I'm here to help! 🍽️
+            </div>
+        </div>
+
+        <!-- Chat history from session -->
+        {% for msg in chat_history %}
+            {% if msg.role == 'user' %}
+            <div class="chat-bubble-row user-row">
+                <div class="chat-bubble user-bubble">{{ msg.content }}</div>
+            </div>
+            {% else %}
+            <div class="chat-bubble-row bot-row">
+                <div class="chat-avatar">🥗</div>
+                <div class="chat-bubble bot-bubble">{{ msg.content | safe }}</div>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Typing indicator (hidden by default) -->
+        <div class="chat-bubble-row bot-row" id="typingIndicator" style="display:none;">
+            <div class="chat-avatar">🥗</div>
+            <div class="chat-bubble bot-bubble typing-bubble">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ───── Chat Input ───── -->
+    <div class="chat-input-bar">
+        <form id="chatForm" action="/dietician/send" method="POST">
+            <input
+                type="text"
+                name="message"
+                id="messageInput"
+                class="chat-input"
+                placeholder="Ask about your diet, meals, calories..."
+                autocomplete="off"
+                required
+            >
+            <button type="submit" class="chat-send-btn">➤</button>
+        </form>
+    </div>
+
+    <script>
+        // Auto scroll to bottom
+        function scrollToBottom() {
+            const chat = document.getElementById('chatMessages');
+            chat.scrollTop = chat.scrollHeight;
+        }
+        scrollToBottom();
+
+        // Show typing indicator on submit
+        document.getElementById('chatForm').addEventListener('submit', function() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+            document.getElementById('messageInput').readOnly = true;
+            scrollToBottom();
+        });
+    </script>
+
+</body>
+</html>

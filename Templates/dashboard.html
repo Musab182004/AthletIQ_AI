@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AthletIQ - Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+     <nav class="navbar-custom">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/dashboard" class="logo">AthletIQ</a>
+            <div class="nav-links">
+                <a href="/dashboard" class="active">Dashboard</a>
+                <a href="/tracker">Tracker</a>
+                <a href="/dietician">Dietician</a>
+                <a href="/analyzer">Form Analyzer</a>
+                <a href="/settings">Settings</a>
+                <a href="/logout" style="color: #ef4444;">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section-padding">
+        <div class="container">
+
+            {% if show_disclaimer %}
+            <div class="row alert-row">
+                <div class="col-12">
+                    <div class="alert-strip">
+                        ⚠️ ENGINE WARNING: STREAK FAILURE IMMINENT! You have been absent from the gym for 4+ days.
+                        Execute workout sequence immediately to save configuration state.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row mb-4">
+                <div class="col-12 welcome-header">
+                    <h1>Welcome, {{ user['name'] }}</h1>
+                    <p class="para1">Live Core Metrics Tracking • Today is <span class="highlight-orange">{{ day
+                            }}</span>, {{ date }}</p>
+                </div>
+            </div>
+
+            <!-- Top 3 Cards -->
+            <div class="row g-4">
+
+                <div class="col-md-4">
+                    <div class="at-card border-primary">
+                        <h1>Calorie Target</h1>
+                        <p class="sub-title">Harris-Benedict Multiplier</p>
+                        <div class="at-data-box text-center">
+                            <span style="font-size: 36px; font-weight: bold; color: #3b82f6;">{{ user['calories']
+                                }}</span>
+                            <p style="margin-top: 5px; color: #94a3b8; font-size: 14px;">KCAL / DAILY LIMIT</p>
+                        </div>
+                        <p class="text-margin">Current Active Goal Strategy: <span class="goal-mode">{{ user['goal']
+                                }}</span></p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="at-card border-success">
+                        <h1>Physique Telemetry</h1>
+                        <p class="sub-title">Static State Weights</p>
+
+                        <div class="at-data-box">
+                            <p class="day-text">Current Weight Baseline:</p>
+                            <p class="highlight-green">{{ user['weight'] }} KG</p>
+                        </div>
+
+                        <div class="at-data-box" style="margin-bottom: 0;">
+                            <p class="day-text">Target Physique Goal:</p>
+                            <p style="color: #3b82f6; font-weight: bold; font-size: 18px;">{{ user['target_weight'] }}
+                                KG</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="at-card border-warning">
+                        <h1>Discipline Tracker</h1>
+                        <p class="sub-title">Daily Attendance Deployment</p>
+
+                        {% if is_sunday %}
+                        <div class="at-data-box sunday-law" style="padding: 25px 15px;">
+                            SUNDAY EXCEPTION ENGINE ACTIVE<br>
+                            <span style="font-size: 12px; font-weight: normal; color: #cbd5e1;">Cheat Meal Permission
+                                Status: Approved for Active Users</span>
+                        </div>
+                        {% else %}
+
+                        {% if status_marked %}
+                        <div class="at-data-box text-center">
+                            <p class="day-text">Today's Status:</p>
+                            <span class="at-badge badge-success">{{ status_marked }}</span>
+                            <p class="notice-italic">State locked until next UTC calibration cycle.</p>
+                        </div>
+                        {% else %}
+                        <p class="text-margin">Select today's action:</p>
+                        <div class="flex-group">
+                            <a href="/track/Gym" class="btn-at btn-at-success text-center"
+                                style="text-decoration: none; width: 50%;">HIT GYM</a>
+                            <a href="/track/Rest" class="btn-at btn-at-secondary text-center"
+                                style="text-decoration: none; width: 50%;">TAKE REST</a>
+                        </div>
+                        {% endif %}
+
+                        {% endif %}
+
+                        <p class="text-margin"
+                            style="font-size: 13px; color: #94a3b8; margin-top: 20px; text-align: center;">
+                            Last Gym Session: <span style="color: #ffffff; font-weight: bold;">{{ user['last_gym_date']
+                                if user['last_gym_date'] else 'No Data Verified' }}</span>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Tracker Banner Card -->
+            <div class="row g-4 mt-1">
+                <div class="col-12">
+                    <div class="at-card border-primary"
+                        style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                        <div>
+                            <h1 style="margin:0 0 6px 0;">Monthly Progress Tracker</h1>
+                            <p class="sub-title" style="margin:0;">Log weight, calories & gym sessions. View
+                                month-by-month progress.</p>
+                        </div>
+                        <a href="/tracker" class="btn-at btn-at-primary"
+                            style="text-decoration:none; width:auto; padding:14px 32px; white-space:nowrap;">
+                            📊 Open Tracker
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-4 mt-1">
+                <div class="col-12">
+                    <div class="at-card border-success"
+                        style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                        <div>
+                            <h1 style="margin:0 0 6px 0;">AI Dietician</h1>
+                            <p class="sub-title" style="margin:0;">Chat with your personal AI nutritionist. Get meal
+                                plans, calorie advice, and more.</p>
+                        </div>
+                        <a href="/dietician" class="btn-at btn-at-success"
+                            style="text-decoration:none; width:auto; padding:14px 32px; white-space:nowrap;">
+                            🥗 Open Dietician
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- Form Analyzer Card -->
+            <div class="row g-4 mt-1">
+                <div class="col-12">
+                    <div class="at-card border-warning"
+                        style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                        <div>
+                            <h1 style="margin:0 0 6px 0;">Form Analyzer</h1>
+                            <p class="sub-title" style="margin:0;">Upload your exercise video and get instant AI-powered form feedback with accuracy score.</p>
+                        </div>
+                        <a href="/analyzer" class="btn-at btn-at-warning"
+                            style="text-decoration:none; width:auto; padding:14px 32px; white-space:nowrap;">
+                            🏋️ Analyze Form
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Card -->
+            <div class="row g-4 mt-1">
+                <div class="col-12">
+                    <div class="at-card"
+                        style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; border-top: 4px solid #475569;">
+                        <div>
+                            <h1 style="margin:0 0 6px 0;">Profile Settings</h1>
+                            <p class="sub-title" style="margin:0;">Update your weight, goal, activity level — calories recalculate automatically.</p>
+                        </div>
+                        <a href="/settings" class="btn-at btn-at-secondary"
+                            style="text-decoration:none; width:auto; padding:14px 32px; white-space:nowrap;">
+                            ⚙️ Update Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="footer-custom">
+                        AthletIQ &copy; 2026 &nbsp;·&nbsp; Track. Improve. Dominate.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</body>
+
+</html>
